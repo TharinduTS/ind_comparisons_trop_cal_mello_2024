@@ -216,10 +216,10 @@ twenty_mb_removed[twenty_mb_removed == "xen228"] <- "IC_F1"
 twenty_mb_removed[twenty_mb_removed == "BJE4687"] <- "GH_F1"
 twenty_mb_removed[twenty_mb_removed == "BJE4362"] <- "GH_M1"
 twenty_mb_removed[twenty_mb_removed == "BJE4360"] <- "GH_M2"
-twenty_mb_removed[twenty_mb_removed == "XT10"] <- "LT_F1"
-twenty_mb_removed[twenty_mb_removed == "XT11"] <- "LT_F2"
-twenty_mb_removed[twenty_mb_removed == "XT1"] <- "LT_M1"
-twenty_mb_removed[twenty_mb_removed == "XT7"] <- "LT_M2"
+twenty_mb_removed[twenty_mb_removed == "XT10"] <- "LT_1"
+twenty_mb_removed[twenty_mb_removed == "XT11"] <- "LT_2"
+twenty_mb_removed[twenty_mb_removed == "XT1"] <- "LT_3"
+twenty_mb_removed[twenty_mb_removed == "XT7"] <- "LT_4"
 twenty_mb_removed[twenty_mb_removed == "EUA0331"] <- "NG_F1"
 twenty_mb_removed[twenty_mb_removed == "EUA0333"] <- "NG_F2"
 twenty_mb_removed[twenty_mb_removed == "EUA0334"] <- "NG_M1"
@@ -248,10 +248,10 @@ sample_list<-c('SL_F1',
                'GH_F1',
                'GH_M1',
                'GH_M2',
-               'LT_F1',
-               'LT_F2',
-               'LT_M1',
-               'LT_M2',
+               'LT_1',
+               'LT_2',
+               'LT_3',
+               'LT_4',
                'NG_F1',
                'NG_F2',
                'NG_M1',
