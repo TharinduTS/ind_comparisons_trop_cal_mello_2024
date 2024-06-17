@@ -159,3 +159,120 @@ realSFS out_${SLURM_ARRAY_TASK_ID}.saf.idx -P 24 > out_${SLURM_ARRAY_TASK_ID}.sf
 realSFS saf2theta out_${SLURM_ARRAY_TASK_ID}.saf.idx -sfs out_${SLURM_ARRAY_TASK_ID}.sfs -outname out_${SLURM_ARRAY_TASK_ID}
 thetaStat do_stat out_${SLURM_ARRAY_TASK_ID}.thetas.idx -win 5000000 -step 5000000  -outnames theta.thetasWindow_${SLURM_ARRAY_TASK_ID}.gz
 ```
+After downloading the files,
+
+First I renamed files with the format
+
+Filename_sex_popularion
+
+eg: allROM19161_F_Liberia
+
+and then I did plot this data with following R script
+
+```R
+library("rstudioapi") 
+setwd(dirname(getActiveDocumentContext()$path))
+
+library(ggplot2)
+#install.packages("Hmisc")
+library(Hmisc)
+
+# Delete previous plot before starting if it is in the same folder*****************
+
+
+#remove scientific notation
+options(scipen=999)
+
+pop_name<-""
+
+file_list<-grep(list.files(path="./individual_pi",full.names = TRUE), pattern='\\PI$', value=TRUE)
+
+print(file_list)
+
+# combine files adding pop and sex from file name
+df <- do.call(rbind, lapply(file_list, function(x) cbind(read.table(x), file_name=tail(strsplit(x, "/")[[1]],n=1))))
+
+# give new column names
+col_names<-c('info','chr','loc','tW','tP','tF','tH','tL','Tajima','fuf','fud','fayh','zeng','nSites','file_name')
+colnames(df) <- col_names
+
+# Split name column into firstname and last name
+require(stringr)
+df[c( 'ind','sex','pop','info')] <- str_split_fixed(df$file_name, '_', 4)
+
+#remove first 20mb of chr7
+twenty_mb_removed<-df[df$chr!="Chr7" | df$loc>20000000,]
+
+#remove JBL sample
+twenty_mb_removed<-twenty_mb_removed[twenty_mb_removed$ind!="JBL052",]
+
+# renaming all samples
+twenty_mb_removed[twenty_mb_removed == "AMNH17272"] <- "SL_F1"
+twenty_mb_removed[twenty_mb_removed == "AMNH17274"] <- "SL_F2"
+twenty_mb_removed[twenty_mb_removed == "AMNH17271"] <- "SL_M1"
+twenty_mb_removed[twenty_mb_removed == "AMNH17273"] <- "SL_M2"
+twenty_mb_removed[twenty_mb_removed == "allROM19161"] <- "LB_F1"
+twenty_mb_removed[twenty_mb_removed == "xen228"] <- "IC_F1"
+twenty_mb_removed[twenty_mb_removed == "BJE4687"] <- "GH_F1"
+twenty_mb_removed[twenty_mb_removed == "BJE4362"] <- "GH_M1"
+twenty_mb_removed[twenty_mb_removed == "BJE4360"] <- "GH_M2"
+twenty_mb_removed[twenty_mb_removed == "XT10"] <- "LT_F1"
+twenty_mb_removed[twenty_mb_removed == "XT11"] <- "LT_F2"
+twenty_mb_removed[twenty_mb_removed == "XT1"] <- "LT_M1"
+twenty_mb_removed[twenty_mb_removed == "XT7"] <- "LT_M2"
+twenty_mb_removed[twenty_mb_removed == "EUA0331"] <- "NG_F1"
+twenty_mb_removed[twenty_mb_removed == "EUA0333"] <- "NG_F2"
+twenty_mb_removed[twenty_mb_removed == "EUA0334"] <- "NG_M1"
+twenty_mb_removed[twenty_mb_removed == "EUA0335"] <- "NG_M2"
+
+twenty_mb_removed[twenty_mb_removed == "cal"] <- "Xcal"
+twenty_mb_removed[twenty_mb_removed == "mello"] <- "Xmel"
+
+#change pop names
+
+twenty_mb_removed[twenty_mb_removed == "Cal"] <- "Cameroon"
+twenty_mb_removed[twenty_mb_removed == "Mello"] <- "Gabon"
+
+
+# use this section to set sample order
+
+sample_list<-c('SL_F1',
+               'SL_F2',
+               'SL_M1',
+               'SL_M2',
+               'LB_F1',
+               'IC_F1',
+               'GH_F1',
+               'GH_M1',
+               'GH_M2',
+               'LT_F1',
+               'LT_F2',
+               'LT_M1',
+               'LT_M2',
+               'NG_F1',
+               'NG_F2',
+               'NG_M1',
+               'NG_M2',
+               'Xcal',
+               'Xmel')
+
+#use sample list order as levels
+
+twenty_mb_removed$ind=factor(twenty_mb_removed$ind,levels = sample_list)
+
+ND_plot<-ggplot(twenty_mb_removed,aes(x=ind,y=tP/nSites,color=pop))+
+  geom_violin()+
+  theme_classic()+
+  ylab(expression(pi))+
+  xlab("Sample")+ 
+  guides(color = guide_legend(title = "Origin"))+
+  theme(axis.text=element_text(size=10), axis.title=element_text(size=18))
+
+ND_plot<-ND_plot + stat_summary(fun.data="mean_sdl", mult=1, 
+                 geom="pointrange", width=0.2 )
+
+# Use custom color palettes
+ND_plot+scale_color_manual(breaks = c("Sierra", "Liberia", "Ivory","Ghana","Tad","Nigeria","Cameroon","Gabon"),values=c("lightblue", "orange", "purple","red","forestgreen",'green','grey','black'))
+
+ggsave("individual_PI_plot.pdf",width = 12, height = 3)
+```
