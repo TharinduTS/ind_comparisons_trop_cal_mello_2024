@@ -233,6 +233,9 @@ twenty_mb_removed[twenty_mb_removed == "mello"] <- "Xmel"
 twenty_mb_removed[twenty_mb_removed == "Cal"] <- "Cameroon"
 twenty_mb_removed[twenty_mb_removed == "Mello"] <- "Gabon"
 
+#Get rid of label tad
+
+twenty_mb_removed[twenty_mb_removed == "Tad"] <- "Ghana"
 
 # use this section to set sample order
 
@@ -266,13 +269,14 @@ ND_plot<-ggplot(twenty_mb_removed,aes(x=ind,y=tP/nSites,color=pop))+
   ylab(expression(pi))+
   xlab("Sample")+ 
   guides(color = guide_legend(title = "Origin"))+
-  theme(axis.text=element_text(size=10), axis.title=element_text(size=18))
+  theme(axis.text=element_text(size=10), axis.title=element_text(size=16))
 
 ND_plot<-ND_plot + stat_summary(fun.data="mean_sdl", mult=1, 
                  geom="pointrange", width=0.2 )
 
 # Use custom color palettes
-ND_plot+scale_color_manual(breaks = c("Sierra", "Liberia", "Ivory","Ghana","Tad","Nigeria","Cameroon","Gabon"),values=c("lightblue", "orange", "purple","red","forestgreen",'green','grey','black'))
+ND_plot+scale_color_manual(breaks = c("Sierra", "Liberia", "Ivory","Ghana","Tad","Nigeria","Cameroon","Gabon"),values=c("lightblue", "orange", "purple","red","red",'green','grey','black'))
 
 ggsave("individual_PI_plot.pdf",width = 12, height = 3)
+  
 ```
