@@ -158,6 +158,337 @@ module load htslib
 angsd -GL 1 -out genolike -nThreads 10 -doGlf 2 -doMajorMinor 1 -doMaf 0 -doCounts 1 -setMinDepthInd 5 -setMaxDepth 100 -minMapQ 20 -bam bam.filelist -r Chr7:1-20000000
 NGSadmix -likes genolike.beagle.gz -K ${SLURM_ARRAY_TASK_ID} -P 4 -o myoutfiles${SLURM_ARRAY_TASK_ID} -minMaf 0.05
 ```
+Then I
+1)Downloaded all the data
+2)put them in a directory named outfiles inside the directory with my R script to plot
+3)Created pop_info.txt file with the same order as bam.filelist
+
+pop_info.txt
+```txt
+F_Ghana_WZ_BJE4687_combined__sorted.bam	Ghana
+F_IvoryCoast_xen228_combined__sorted.bam	Ivory_coast
+F_Nigeria_EUA0331_combined__sorted.bam	Nigeria
+F_Nigeria_EUA0333_combined__sorted.bam	Nigeria
+F_SierraLeone_AMNH17272_combined__sorted.bam	Sierra_Leone
+F_SierraLeone_AMNH17274_combined__sorted.bam	Sierra_Leone
+all_ROM19161_sorted.bam	Liberia
+XT10_WZ_no_adapt._sorted.bam	Lab_tads
+XT11_WW_trim_no_adapt_scafconcat_sorted.bam	Lab_tads
+M_Ghana_WY_BJE4362_combined__sorted.bam	Ghana
+M_Ghana_ZY_BJE4360_combined__sorted.bam	Ghana
+M_Nigeria_EUA0334_combined__sorted.bam	Nigeria
+M_Nigeria_EUA0335_combined__sorted.bam	Nigeria
+M_SierraLeone_AMNH17271_combined__sorted.bam	Sierra_Leone
+M_SierraLeone_AMNH17273_combined__sorted.bam	Sierra_Leone
+XT1_ZY_no_adapt._sorted.bam	Lab_tads
+XT7_WY_no_adapt__sorted.bam	Lab_tads
+```
+4) and copied this R script in to the same directory and ran it
+```R
+#!/usr/bin/Rscript
+
+# Usage: plotADMIXTURE.r -p <prefix> -i <info file, 2-column file with ind name and population/species name> 
+#                        -k <max K value> -l <comma-separated list of populations/species in the order to be plotted>
+# This R script makes barplots for K=2 and all other K values until max K (specified with -k). It labels the individuals 
+# and splits them into populations or species according to the individual and population/species names in the 2-column file specified with -i.
+# The order of populations/species follows the list of populations/species given with -l.
+# Usage example: plotADMIXTURE.r -p fileXY -i file.ind.pop.txt -k 4 -pop pop1,pop2,pop3
+# In this example, the script would use the files fileXY.2.Q, fileXY.3.Q, fileXY.4.Q to make barplots for the three populations.
+# file.ind.pop.txt should contain one line for each individual in the same order as in the admixture files e.g.
+# ind1 pop1
+# ind2 pop1
+# ind3 pop2
+# ind4 pop3
+
+# Author: Joana Meier, September 2019
+
+# I am customizing this script. Making it easy to use with R studio-TS
+# ***keeping this script in current directory for clarity. But setting the working directory to the directory with all output files***
+
+
+#set working directory to all_outputs inside the current path
+setwd(paste(dirname(rstudioapi::getSourceEditorContext()$path),"/outfiles",sep=""))
+
+#set default values here so it can run on R studio without parsing options
+#These will come into action if you do not define these options like you do in bash
+
+#change prefix here
+p_input<-"myoutfiles"
+#change sample list file here
+# ******************* nKEEP THE SAME ORDE AS IN bam.filelist ************
+i_input<-paste(dirname(rstudioapi::getSourceEditorContext()$path),"/pop_info.txt",sep="")
+# change maximum k value to plot here
+k_input<-5
+# change minimum k value to plot here
+m_input<-2
+
+#************** Change your pop order by changing the list below*******************#
+#add a list of populations seperated by commas here. This should be exactly similiar to the populations in your sample list file. plots will be created according to this population order
+# you will have to change this every time you edit sample list
+l_input<-"Sierra_Leone,Liberia,Ivory_coast,Ghana,Lab_tads,Nigeria"
+
+
+#add the location and file name for the plots here. I am setting this to the directory I am creating in the next line
+o_input<-paste(dirname(rstudioapi::getSourceEditorContext()$path),"/plot_outs/plot",sep="")
+
+#create a directory for plot output if it doesn't already exist in the directory with the script
+dir.create(file.path(dirname(rstudioapi::getSourceEditorContext()$path), "plot_outs"))
+
+# Read in the arguments
+library("optparse")
+option_list = list(
+  make_option(c("-p", "--prefix"), type="character", default=p_input, 
+              help="prefix name (with path if not in the current directory)", metavar="character"),
+  make_option(c("-i", "--infofile"), type="character", default=i_input, 
+              help="info text file containing for each individual the population/species information", metavar="character"),
+  make_option(c("-k", "--maxK"), type="integer", default=k_input, 
+              help="maximum K value", metavar="integer"),
+  make_option(c("-m", "--minK"), type="integer", default=m_input, 
+              help="minimum K value", metavar="integer"),
+  make_option(c("-l", "--populations"), type="character", default=l_input, 
+              help="comma-separated list of populations/species in the order to be plotted", metavar="character"),
+  make_option(c("-o", "--outPrefix"), type="character", default=o_input, 
+              help="output prefix (default: name provided with prefix)", metavar="character")
+) 
+opt_parser = OptionParser(option_list=option_list)
+opt = parse_args(opt_parser)
+
+# Check that all required arguments are provided
+if (is.null(opt$prefix)){
+  print_help(opt_parser)
+  stop("Please provide the prefix", call.=FALSE)
+}else if (is.null(opt$infofile)){
+  print_help(opt_parser)
+  stop("Please provide the info file", call.=FALSE)
+}else if (is.null(opt$maxK)){
+  print_help(opt_parser)
+  stop("Please provide the maximum K value to plot", call.=FALSE)
+}else if (is.null(opt$populations)){
+  print_help(opt_parser)
+  stop("Please provide a comma-separated list of populations/species", call.=FALSE)
+}
+
+# If no output prefix is given, use the input prefix
+if(opt$outPrefix=="default") opt$outPrefix=opt$prefix
+
+# Assign the first argument to prefix
+prefix=opt$prefix
+
+# Get individual names in the correct order
+labels<-read.table(opt$infofile)
+
+# Name the columns
+names(labels)<-c("ind","pop")
+
+# Add a column with population indices to order the barplots
+# Use the order of populations provided as the fourth argument (list separated by commas)
+labels$n<-factor(labels$pop,levels=unlist(strsplit(opt$populations,",")))
+levels(labels$n)<-c(1:length(levels(labels$n)))
+labels$n<-as.integer(as.character(labels$n))
+
+# read in the different admixture output files
+minK=opt$minK
+maxK=opt$maxK
+tbl<-lapply(minK:maxK, function(x) read.table(paste0(prefix,x,".qopt")))
+
+# Prepare spaces to separate the populations/species
+rep<-as.vector(table(labels$n))
+spaces<-0
+for(i in 1:length(rep)){spaces=c(spaces,rep(0,rep[i]-1),0.15)}
+spaces<-spaces[-length(spaces)]
+
+#change the space between individuals
+spaces<-replace(spaces, spaces==0, 0.02)
+
+#change the space between populations- only change pop_space
+
+pop_space<-0.10
+spaces<-replace(spaces, spaces==0.15, pop_space)
+
+
+# Plot the cluster assignments as a single bar for each individual for each K as a separate row
+tiff(file=paste0(opt$outPrefix,".tiff"),width = 800, height = 500,res=200)
+
+#*************** Change font size by changing cex.axis here****************#
+# change 3rd value in "oma" if you wanna add labels to gain enough space. Use mai to adjust space between different k valued plots
+par(mfrow=c(maxK-1,1),mar=c(0,1,0.1,1),oma=c(2,4,4,1),mgp=c(0,0.2,0),mai=c(0.05,0,0,0),xaxs="i",cex.lab=0.5,cex.axis=0.55)
+
+#Create a list for plots
+plot_list<-list()
+#assign colors to populations at once
+
+col1<-"red"
+col2<-"green"
+col3<-"orange"
+col4<-"skyblue"
+col5<-"darkblue"
+col6<-"yellow"
+col7<-"pink"
+col8<-"purple"
+col9<-"grey"
+col10<-"black"
+col11<-"forestgreen"
+col12<-"brown"
+
+#create color palettes for each k value
+col_palette_k2<-c(col1,col2)
+col_palette_k3<-c(col3,col2,col1)
+col_palette_k4<-c(col4,col1,col2,col3)
+col_palette_k5<-c(col2,col1,col4,col5,col3)
+
+
+col_palette_k6<-c(col1,col2,col6,col5,col4,col3)
+col_palette_k7<-c(col1,col7,col5,col6,col4,col3,col2)
+col_palette_k8<-c(col5,col8,col1,col7,col6,col3,col4,col2)
+col_palette_k9<-c(col8,col6,col7,col2,col5,col4,col3,col1,col9)
+col_palette_k10<-c(col8,col7,col4,col10,col2,col9,col6,col1,col3,col5)
+col_palette_k11<-c(col6,col10,col2,col4,col1,col7,col9,col8,col3,col11,col5)
+col_palette_k12<-c(col1,col2,col3,col4,col5,col6,col7,col8,col9,col10,col11,col12)
+
+# make a variable with full sample names 
+full_sample_names<-labels$ind[order(labels$n)]
+
+# get simpler names  for those complex sample names
+library(plyr)
+#first renaming the sample names which does not follow the specific format manually**DO NOT USE"_" HERE AS SPLIT WILL USE THIS IN NEXT LINE
+simple_sample_list_changing<-mapvalues(full_sample_names, from = c("all_ROM19161_sorted.bam","XT10_WZ_no_adapt._sorted.bam","XT11_WW_trim_no_adapt_scafconcat_sorted.bam","XT1_ZY_no_adapt._sorted.bam","XT7_WY_no_adapt__sorted.bam"), 
+                                       to = c("o_Liberia1","F_Lab1","F_Lab2","M_Lab3","M_Lab4"))
+
+#convert facter list into chrs to rename
+s_list_chr<-as.character(simple_sample_list_changing)
+
+
+#then remove the parts after the first"_" from other samples
+shortened_sample_list<-sapply(strsplit(s_list_chr,split = "_"),`[`, 2)
+
+#I am changing samples names here to keep it consistant with other analysis
+# renaming all samples
+#****** THIS CANCELS OUT PREVIOUS STEPS**********
+# renaming all samples
+full_sample_names[full_sample_names == "F_SierraLeone_AMNH17272_combined__sorted.bam"] <- "SL_F1"
+full_sample_names[full_sample_names == "F_SierraLeone_AMNH17274_combined__sorted.bam"] <- "SL_F2"
+full_sample_names[full_sample_names == "M_SierraLeone_AMNH17271_combined__sorted.bam"] <- "SL_M1"
+full_sample_names[full_sample_names == "M_SierraLeone_AMNH17273_combined__sorted.bam"] <- "SL_M2"
+full_sample_names[full_sample_names == "all_ROM19161_sorted.bam"] <- "LB_F1"
+full_sample_names[full_sample_names == "F_IvoryCoast_xen228_combined__sorted.bam"] <- "IC_F1"
+full_sample_names[full_sample_names == "F_Ghana_WZ_BJE4687_combined__sorted.bam"] <- "GH_F1"
+full_sample_names[full_sample_names == "M_Ghana_WY_BJE4362_combined__sorted.bam"] <- "GH_M1"
+full_sample_names[full_sample_names == "M_Ghana_ZY_BJE4360_combined__sorted.bam"] <- "GH_M2"
+full_sample_names[full_sample_names == "XT10_WZ_no_adapt._sorted.bam"] <- "LT_1"
+full_sample_names[full_sample_names == "XT11_WW_trim_no_adapt_scafconcat_sorted.bam"] <- "LT_2"
+full_sample_names[full_sample_names == "XT1_ZY_no_adapt._sorted.bam"] <- "LT_3"
+full_sample_names[full_sample_names == "XT7_WY_no_adapt__sorted.bam"] <- "LT_4"
+full_sample_names[full_sample_names == "F_Nigeria_EUA0331_combined__sorted.bam"] <- "NG_F1"
+full_sample_names[full_sample_names == "F_Nigeria_EUA0333_combined__sorted.bam"] <- "NG_F2"
+full_sample_names[full_sample_names == "M_Nigeria_EUA0334_combined__sorted.bam"] <- "NG_M1"
+full_sample_names[full_sample_names == "M_Nigeria_EUA0335_combined__sorted.bam"] <- "NG_M2"
+
+shortened_sample_list<-full_sample_names
+#**********************************************
+
+#re oreder samples
+
+#shortened_sample_list<-c("Liberia1","SierraLeone","SierraLeone","SierraLeone","SierraLeone","IvoryCoast","Ghana","Ghana","Ghana","Lab1","Lab2","Lab3","Lab4","Nigeria","Nigeria","Nigeria","Nigeria" )
+
+
+# following plots are written in a way you can just copy paste only changing k_val for the different number of 'k's
+#paste whats inside * marks for different k values and then change k_val
+#**********
+# Plot k=2
+# change only here
+k_val<-2
+
+points<-c(0.5,1.5,2.5,3.5,4.65,5.75,6.85,7.85,8.85,9.95,10.95,11.95,12.95,14.25,15.25,16.25,17.25)
+
+#uncomment and change values of this and line after bp to manually change label placing
+label_points<-c(2,4.3,5.95,8.00,11.80,15.72)
+
+#this changes K value label position
+p2<-c(0.60)
+
+bp<-barplot(t(as.matrix(tbl[[k_val-1]][order(labels$n),])), col=get(paste("col_palette_k",k_val,sep="")),xaxt="n", border=NA,ylab=paste0("K=",k_val,sep=""),yaxt="n",space=spaces)
+#using following line to use manual measures
+axis(3,at=label_points,las=1,cex=6,tick = F,
+     labels=unlist(strsplit(opt$populations,",")))
+axis(2, at =p2,labels=c("K=2"),las=2,tick=F,cex=2)
+  
+
+
+
+
+#***********
+
+#commwnt out this section to automate coloring. Keep commented to manually assign colours for each pop with the next section( you can do it once by selecting lines and ctrl+shift+c)
+# Plot higher K values
+#  if(maxK>minK)lapply(2:(maxK-1), function(x) barplot(t(as.matrix(tbl[[x]][order(labels$n),])), col=rainbow(n=x+1),xaxt="n", border=NA,ylab=paste0("K=",x+1),yaxt="n",space=spaces))
+#  axis(1,at=c(which(spaces==0.15),bp[length(bp)])-diff(c(1,which(spaces==pop_space),bp[length(bp)]))/2,
+#      labels=unlist(strsplit(opt$populations,",")))
+# dev.off()
+
+#**********
+# Plot k
+# change only here
+k_val<-3
+
+
+#this changes K value label position
+p3<-c(0.5)
+
+bp<-barplot(t(as.matrix(tbl[[k_val-1]][order(labels$n),])), col=get(paste("col_palette_k",k_val,sep="")),xaxt="n", border=NA,ylab=paste0("K=",k_val,sep=""),yaxt="n",space=spaces)
+axis(2, at =p3,labels=c("K=3"),las=2,tick=F,cex=2)
+
+
+
+
+#***********
+
+#**********
+# Plot k
+# change only here
+k_val<-4
+
+
+#this changes K value label position
+p4<-c(0.50)
+
+bp<-barplot(t(as.matrix(tbl[[k_val-1]][order(labels$n),])), col=get(paste("col_palette_k",k_val,sep="")),xaxt="n", border=NA,ylab=paste0("K=",k_val,sep=""),yaxt="n",space=spaces)
+axis(2, at =p4,labels=c("K=4"),las=2,tick=F,cex=2)
+
+
+
+#***********
+
+#**********
+# Plot k
+# change only here
+k_val<-5
+
+#this changes K value label position
+p4<-c(0.45)
+
+bp<-barplot(t(as.matrix(tbl[[k_val-1]][order(labels$n),])), col=get(paste("col_palette_k",k_val,sep="")),xaxt="n", border=NA,ylab=paste0("K=",k_val,sep=""),yaxt="n",space=spaces)
+#axis(1,at=c(which(spaces==pop_space),bp[length(bp)])-diff(c(1,which(spaces==pop_space),bp[length(bp)]))/2,
+axis(1, at =points,labels=shortened_sample_list,las=2,tick=F,cex=2)
+axis(2, at =p4,labels=c("K=5"),las=2,tick=F,cex=2)
+
+
+# #***********
+# #**********
+# # Plot k
+# # change only here
+# k_val<-12
+# 
+# 
+# 
+# 
+# bp<-barplot(t(as.matrix(tbl[[k_val-1]][order(labels$n),])), col=get(paste("col_palette_k",k_val,sep="")),xaxt="n", border=NA,ylab=paste0("K=",k_val,sep=""),yaxt="n",space=spaces)
+# axis(1,at=c(which(spaces==0.15),bp[length(bp)])-diff(c(1,which(spaces==0.15),bp[length(bp)]))/2,
+#      labels=unlist(strsplit(opt$populations,",")))
+
+dev.off()
+```
+
+Then I did plot first 20mb data with the following R script
 
 # PI/Nucleotide diversity for individuals
 
