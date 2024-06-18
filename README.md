@@ -2,6 +2,10 @@
 
 I am going to cal FST, Admixture and PI individual wise - removing 1-20mb in chr7 for trop individuals using bam files
 
+# ******************
+PI and Admix was calculated inside the old directory new_project_Apr_2023
+and FST was in ind_comparisons_trop_cal_mello_2024 
+# *****************
 # FST
 
 working in beluga
@@ -93,7 +97,7 @@ prep_and_cal_admix.sh
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --time=48:00:00
-#SBATCH --mem=512gb
+#SBATCH --mem=64gb
 #SBATCH --output=abba.%J.out
 #SBATCH --error=abba.%J.err
 #SBATCH --account=def-ben
@@ -114,6 +118,44 @@ module load gsl/2.5
 module load htslib
 
 angsd -GL 1 -out genolike -nThreads 10 -doGlf 2 -doMajorMinor 1 -doMaf 0 -doCounts 1 -setMinDepthInd 5 -setMaxDepth 100 -minMapQ 20 -bam bam.filelist -rf ../ref_file_to_remove_7_20.txt
+NGSadmix -likes genolike.beagle.gz -K ${SLURM_ARRAY_TASK_ID} -P 4 -o myoutfiles${SLURM_ARRAY_TASK_ID} -minMaf 0.05
+```
+Then I did the same in a seperate directory for first 20mb of chr 7
+
+```created a new directory in the directory with bamfiles
+```bash
+mkdir admix_for_first_20mb
+```
+and copied bam.filelist there
+and ran admix changing the region
+
+```bash
+#!/bin/sh
+#SBATCH --job-name=fst
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --time=48:00:00
+#SBATCH --mem=64gb
+#SBATCH --output=abba.%J.out
+#SBATCH --error=abba.%J.err
+#SBATCH --account=def-ben
+#SBATCH --array=2-5
+
+#SBATCH --mail-user=premacht@mcmaster.ca
+#SBATCH --mail-type=BEGIN
+#SBATCH --mail-type=END
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-type=REQUEUE
+#SBATCH --mail-type=ALL
+
+# Load modules
+module load nixpkgs/16.09  gcc/7.3.0
+module load StdEnv/2023
+module load angsd
+module load gsl/2.5
+module load htslib
+
+angsd -GL 1 -out genolike -nThreads 10 -doGlf 2 -doMajorMinor 1 -doMaf 0 -doCounts 1 -setMinDepthInd 5 -setMaxDepth 100 -minMapQ 20 -bam bam.filelist -r Chr7:1-20000000
 NGSadmix -likes genolike.beagle.gz -K ${SLURM_ARRAY_TASK_ID} -P 4 -o myoutfiles${SLURM_ARRAY_TASK_ID} -minMaf 0.05
 ```
 
