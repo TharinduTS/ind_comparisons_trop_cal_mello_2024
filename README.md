@@ -69,7 +69,23 @@ bam.filelist
 ```
 then prepared the files for Admixture analysis with
 
-prep_admix.sh
+Now I want to remove Chr7 1-20 mb region. I am creating a file with information on what to include in the analysis
+
+```txt
+Chr1:                   \\all of chr1
+Chr2:
+Chr3:
+Chr4:
+Chr5:
+Chr6:
+Chr7:20000000-          \\chr7 but exclude the first 20000000 bases
+Chr8:
+Chr9:
+Chr10:
+```
+Then I calculated admixture with following script
+
+prep_and_cal_admix.sh
 
 ```bash
 #!/bin/sh
@@ -80,34 +96,6 @@ prep_admix.sh
 #SBATCH --mem=512gb
 #SBATCH --output=abba.%J.out
 #SBATCH --error=abba.%J.err
-#SBATCH --account=def-ben
-
-#SBATCH --mail-user=premacht@mcmaster.ca
-#SBATCH --mail-type=BEGIN
-#SBATCH --mail-type=END
-#SBATCH --mail-type=FAIL
-#SBATCH --mail-type=REQUEUE
-#SBATCH --mail-type=ALL
-
-# Load modules
-module load nixpkgs/16.09  gcc/7.3.0
-module load angsd
-module load gsl/2.5
-module load htslib
-
-angsd -GL 1 -out genolike -nThreads 10 -doGlf 2 -doMajorMinor 1 -doMaf 0 -doCounts 1 -setMinDepthInd 5 -setMaxDepth 100 -minMapQ 20 -bam bam.filelist
-```
-cal Admix
-
-```bash
-#!/bin/sh
-#SBATCH --job-name=bwa_505
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
-#SBATCH --time=168:00:00
-#SBATCH --mem=256gb
-#SBATCH --output=bwa505.%J.out
-#SBATCH --error=bwa505.%J.err
 #SBATCH --account=def-ben
 #SBATCH --array=2-5
 
@@ -120,13 +108,18 @@ cal Admix
 
 # Load modules
 module load nixpkgs/16.09  gcc/7.3.0
+module load StdEnv/2023
 module load angsd
 module load gsl/2.5
 module load htslib
 
+angsd -GL 1 -out genolike -nThreads 10 -doGlf 2 -doMajorMinor 1 -doMaf 0 -doCounts 1 -setMinDepthInd 5 -setMaxDepth 100 -minMapQ 20 -bam bam.filelist -rf ../ref_file_to_remove_7_20.txt
 NGSadmix -likes genolike.beagle.gz -K ${SLURM_ARRAY_TASK_ID} -P 4 -o myoutfiles${SLURM_ARRAY_TASK_ID} -minMaf 0.05
 ```
+
 # PI/Nucleotide diversity for individuals
+
+#** Here I removed Chr7 first 20 mb in the R script********
 
 ```bash
 #!/bin/sh
