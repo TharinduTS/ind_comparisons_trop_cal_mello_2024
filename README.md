@@ -122,7 +122,8 @@ NGSadmix -likes genolike.beagle.gz -K ${SLURM_ARRAY_TASK_ID} -P 4 -o myoutfiles$
 ```
 Then I did the same in a seperate directory for first 20mb of chr 7
 
-```created a new directory in the directory with bamfiles
+created a new directory in the directory with bamfiles
+
 ```bash
 mkdir admix_for_first_20mb
 ```
@@ -488,7 +489,9 @@ axis(2, at =p4,labels=c("K=5"),las=2,tick=F,cex=2)
 dev.off()
 ```
 
-Then I did plot first 20mb data with the following R script
+Then I did plot first 20mb data with the same way
+
+I did repeat this two more times with different seed values and outfile names to check whether results are reproducable
 
 # PI/Nucleotide diversity for individuals
 
