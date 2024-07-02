@@ -55,8 +55,6 @@ bam.filelist
 ```txt
 ../F_Ghana_WZ_BJE4687_combined__sorted.bam_rg_rh.bam
 ../F_IvoryCoast_xen228_combined__sorted.bam_rg_rh.bam
-../F_Nigeria_EUA0331_combined__sorted.bam_rg_rh.bam
-../F_Nigeria_EUA0333_combined__sorted.bam_rg_rh.bam
 ../F_SierraLeone_AMNH17272_combined__sorted.bam_rg_rh.bam
 ../F_SierraLeone_AMNH17274_combined__sorted.bam_rg_rh.bam
 ../all_ROM19161_sorted.bam
@@ -64,12 +62,11 @@ bam.filelist
 ../XT11_WW_trim_no_adapt_scafconcat_sorted.bam_rg_rh.bam
 ../M_Ghana_WY_BJE4362_combined__sorted.bam_rg_rh.bam
 ../M_Ghana_ZY_BJE4360_combined__sorted.bam_rg_rh.bam
-../M_Nigeria_EUA0334_combined__sorted.bam_rg_rh.bam
-../M_Nigeria_EUA0335_combined__sorted.bam_rg_rh.bam
 ../M_SierraLeone_AMNH17271_combined__sorted.bam_rg_rh.bam
 ../M_SierraLeone_AMNH17273_combined__sorted.bam_rg_rh.bam
 ../XT1_ZY_no_adapt._sorted.bam_rg_rh.bam
 ../XT7_WY_no_adapt__sorted.bam_rg_rh.bam
+../JBL052_concatscafs_sorted.bam_rg_rh.bam
 ```
 then prepared the files for Admixture analysis with
 
