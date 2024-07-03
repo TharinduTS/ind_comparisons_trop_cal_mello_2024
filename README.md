@@ -570,7 +570,13 @@ df[c( 'ind','sex','pop','info')] <- str_split_fixed(df$file_name, '_', 4)
 twenty_mb_removed<-df[df$chr!="Chr7" | df$loc>20000000,]
 
 #remove JBL sample
-twenty_mb_removed<-twenty_mb_removed[twenty_mb_removed$ind!="JBL052",]
+#twenty_mb_removed<-twenty_mb_removed[twenty_mb_removed$ind!="JBL052",]
+
+#remove Nigerian samples
+twenty_mb_removed<-twenty_mb_removed[twenty_mb_removed$ind!="EUA0331",]
+twenty_mb_removed<-twenty_mb_removed[twenty_mb_removed$ind!="EUA0333",]
+twenty_mb_removed<-twenty_mb_removed[twenty_mb_removed$ind!="EUA0334",]
+twenty_mb_removed<-twenty_mb_removed[twenty_mb_removed$ind!="EUA0335",]
 
 # renaming all samples
 twenty_mb_removed[twenty_mb_removed == "AMNH17272"] <- "SL_F1"
@@ -586,10 +592,14 @@ twenty_mb_removed[twenty_mb_removed == "XT10"] <- "LT_1"
 twenty_mb_removed[twenty_mb_removed == "XT11"] <- "LT_2"
 twenty_mb_removed[twenty_mb_removed == "XT1"] <- "LT_3"
 twenty_mb_removed[twenty_mb_removed == "XT7"] <- "LT_4"
-twenty_mb_removed[twenty_mb_removed == "EUA0331"] <- "NG_F1"
-twenty_mb_removed[twenty_mb_removed == "EUA0333"] <- "NG_F2"
-twenty_mb_removed[twenty_mb_removed == "EUA0334"] <- "NG_M1"
-twenty_mb_removed[twenty_mb_removed == "EUA0335"] <- "NG_M2"
+
+#twenty_mb_removed[twenty_mb_removed == "EUA0331"] <- "NG_F1"
+#twenty_mb_removed[twenty_mb_removed == "EUA0333"] <- "NG_F2"
+#twenty_mb_removed[twenty_mb_removed == "EUA0334"] <- "NG_M1"
+#twenty_mb_removed[twenty_mb_removed == "EUA0335"] <- "NG_M2"
+
+
+twenty_mb_removed[twenty_mb_removed == "JBL052"] <- "Ref"
 
 twenty_mb_removed[twenty_mb_removed == "cal"] <- "Xcal"
 twenty_mb_removed[twenty_mb_removed == "mello"] <- "Xmel"
@@ -618,16 +628,21 @@ sample_list<-c('SL_F1',
                'LT_2',
                'LT_3',
                'LT_4',
-               'NG_F1',
-               'NG_F2',
-               'NG_M1',
-               'NG_M2',
+               'Ref',
+              # 'NG_F1',
+             #  'NG_F2',
+             #  'NG_M1',
+              # 'NG_M2',
                'Xcal',
                'Xmel')
 
 #use sample list order as levels
 
 twenty_mb_removed$ind=factor(twenty_mb_removed$ind,levels = sample_list)
+
+#change JBL sample name from scaffold to trop
+
+twenty_mb_removed[twenty_mb_removed == "Scaffold"] <- "Ref"
 
 ND_plot<-ggplot(twenty_mb_removed,aes(x=ind,y=tP/nSites,color=pop))+
   geom_violin()+
@@ -641,8 +656,10 @@ ND_plot<-ND_plot + stat_summary(fun.data="mean_sdl", mult=1,
                  geom="pointrange", width=0.2 )
 
 # Use custom color palettes
-ND_plot+scale_color_manual(breaks = c("Sierra", "Liberia", "Ivory","Ghana","Tad","Nigeria","Cameroon","Gabon"),values=c("lightblue", "orange", "purple","red","red",'green','grey','black'))
+ND_plot+scale_color_manual(breaks = c("Sierra", "Liberia", "Ivory","Ghana","Tad","Ref","Cameroon","Gabon"),values=c("lightblue", "orange", "purple","red","red",'forestgreen','grey','black'))
 
 ggsave("individual_PI_plot.pdf",width = 12, height = 3)
+  
+
   
 ```
